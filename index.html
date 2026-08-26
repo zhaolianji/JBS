@@ -73,7 +73,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 </div>
 
 <div class="product-list" id="product-container">
-    <div class="loading-state">加载中...</div>
+    <div class="empty-state">暂无商品，请联系客服咨询</div>
 </div>
 
 <div class="footer">
@@ -93,7 +93,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 <div class="toast" id="toast">微信号 SHUN9285 已复制</div>
 
 <script>
-const DATA_URL='products.json';
+// 数据源已清空
+const products = [];
+
 const subCategories={
     'all':['全部规格'],
     'round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
@@ -103,41 +105,14 @@ const subCategories={
     'single-old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
     'single-wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级']
 };
-let allProducts=[];
+
 let currentCategory='all';
 let currentSubCategory='全部规格';
 
-async function loadProducts(){
-    try{
-        const r=await fetch(DATA_URL+'?t='+Date.now());
-        if(!r.ok) throw new Error();
-        allProducts=await r.json();
-        renderProducts()
-    }catch(e){
-        document.getElementById('product-container').innerHTML='<div class="empty-state">暂无商品请联系客服咨询</div>'
-    }
-}
-
 function renderProducts(){
     const c=document.getElementById('product-container');
-    const f=allProducts.filter(p=>{
-        const catMatch = currentCategory==='all' || p.category===currentCategory;
-        const subMatch = currentSubCategory==='全部规格' || p.grade===currentSubCategory;
-        return catMatch && subMatch;
-    });
-    
-    if(f.length===0){
-        c.innerHTML='<div class="empty-state">该分类暂无商品</div>';
-        return
-    }
-    c.innerHTML=f.map(p=>{
-        const dh=(p.details||'').split('\n').map(l=>{
-            const i=l.indexOf('：');
-            if(i>-1) return '<div class="detail-item"><span class="detail-label">'+l.substring(0,i+1)+'</span><span class="detail-value">'+l.substring(i+1)+'</span></div>';
-            return l?'<div class="detail-item"><span class="detail-value">'+l+'</span></div>':''
-        }).join('');
-        return '<div class="product-card"><div class="product-img-box"><img src="'+p.image+'" alt="'+p.name+'" onerror="this.src=\'https://via.placeholder.com/400x400.png?text=No+Image\'"></div><div class="product-info"><div class="info-row"><span class="product-no">编号：'+p.no+'</span><span class="product-grade">'+p.grade+'</span></div><div class="product-title">'+p.name+'</div><div class="detail-list">'+dh+'</div><div class="price-tag">¥ '+p.price+'<span>/条</span></div><button class="btn-contact" onclick="copyWechat()">点击咨询</button></div></div>'
-    }).join('')
+    // 因为数据源为空，这里会直接显示“暂无商品”
+    c.innerHTML='<div class="empty-state">暂无商品，请联系客服咨询</div>';
 }
 
 function switchCategory(el,type){
@@ -188,7 +163,8 @@ function showToast(){
     setTimeout(()=>t.classList.remove('show'),2000)
 }
 
-loadProducts();
+// 页面加载时渲染
+renderProducts();
 </script>
 
 </body>
