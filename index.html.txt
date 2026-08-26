@@ -1,107 +1,197 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>商品详情页 - A69-2</title>
-    <style>
-        /* --- 基础样式 --- */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #fff; min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JBS 诀别诗制</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f7f8fa;color:#333;line-height:1.5;padding-bottom:30px}
+.header{background:#fff;text-align:center;padding:30px 0 20px;border-bottom:1px solid #eee;position:sticky;top:0;z-index:100}
+.brand-mark{font-size:32px;font-weight:800;letter-spacing:6px;color:#1a1a1a;margin-bottom:6px}
+.brand-sub{font-size:11px;letter-spacing:2px;color:#999}
+.filter-container{background:#fff;padding:15px 16px;border-bottom:1px solid #eee;position:sticky;top:95px;z-index:99}
+.filter-label{font-size:12px;color:#999;margin-bottom:8px;font-weight:500}
+.filter-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.filter-scroll::-webkit-scrollbar{display:none}
+.filter-tag{flex-shrink:0;padding:6px 16px;font-size:13px;border-radius:20px;border:1px solid #e0e0e0;color:#666;background:#fff;transition:all .2s;cursor:pointer}
+.filter-tag.active{background:#333;color:#fff;border-color:#333}
+.sub-filter-scroll{display:none;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed #eee}
+.sub-filter-scroll.show{display:flex}
+.sub-tag{padding:4px 12px;font-size:11px;border-radius:4px;background:#f5f5f5;color:#666;border:1px solid transparent;cursor:pointer}
+.sub-tag.active{background:#fff;color:#333;border-color:#333;font-weight:600}
+.product-list{padding:16px;min-height:100px}
+.product-card{background:#fff;border-radius:12px;margin-bottom:20px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.03)}
 
-        /* --- 1. 顶部滑动图片区域 (核心部分) --- */
-        .gallery-container {
-            width: 100%;
-            overflow-x: auto; /* 允许横向滚动 */
-            scroll-snap-type: x mandatory; /* 强制吸附对齐 */
-            display: flex; /* 让图片横排 */
-            -webkit-overflow-scrolling: touch; /* iOS顺滑滚动 */
-        }
+/* 多图滑动样式 */
+.product-img-box{width:100%;aspect-ratio:1/1;background:#eef0f2;overflow-x:auto;scroll-snap-type:x mandatory;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.product-img-box::-webkit-scrollbar{display:none}
+.product-img-box img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block;scroll-snap-align:center}
 
-        .gallery-item {
-            flex: 0 0 100%; /* 每张图占满宽度 */
-            scroll-snap-align: center; /* 滚动停止时居中 */
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: auto;
-            display: block;
-            aspect-ratio: 1/1; /* 强制正方形，防止长短不一 */
-            object-fit: cover;
-        }
-
-        /* --- 2. 商品信息区域 --- */
-        .product-info { padding: 20px; }
-        .price-tag { color: #e4393c; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .product-title { font-size: 18px; line-height: 1.4; margin-bottom: 15px; font-weight: 500; }
-
-        /* --- 3. 详情表格样式 --- */
-        .detail-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        .detail-table th, .detail-table td { border: 1px solid #eee; padding: 10px; text-align: left; }
-        .detail-table th { background-color: #f9f9f9; color: #666; width: 80px; font-weight: normal; }
-        .detail-table td { color: #333; }
-
-        /* 底部购买按钮占位 */
-        .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; border-top: 1px solid #eee; text-align: center; max-width: 600px; margin: 0 auto; }
-        .buy-btn { background-color: #e4393c; color: #fff; border: none; padding: 12px 0; width: 100%; border-radius: 4px; font-size: 16px; cursor: pointer; }
-    </style>
+.product-info{padding:16px}
+.info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.product-no{font-size:12px;color:#999;letter-spacing:.5px}
+.product-grade{font-size:10px;padding:2px 6px;background:#f0f0f0;color:#666;border-radius:4px}
+.product-title{font-size:17px;font-weight:600;color:#1a1a1a;margin-bottom:12px;line-height:1.4}
+.detail-list{margin-bottom:15px}
+.detail-item{font-size:13px;color:#666;margin-bottom:6px;display:flex}
+.detail-label{color:#999;min-width:45px;flex-shrink:0}
+.detail-value{color:#333}
+.price-tag{font-size:22px;font-weight:700;color:#1a1a1a;margin-top:10px}
+.price-tag span{font-size:14px;font-weight:400}
+.btn-contact{width:100%;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;margin-top:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-contact:active{opacity:.9}
+.footer{background:#fff;padding:30px 20px 50px;margin-top:10px;border-top:1px solid #eee}
+.custom-note{text-align:center;font-size:13px;color:#d4a853;margin-bottom:20px;font-weight:500;padding:10px;background:#fffbf0;border-radius:6px}
+.footer-title{font-size:14px;font-weight:600;margin-bottom:12px;color:#333}
+.footer-item{font-size:12px;color:#888;margin-bottom:8px;line-height:1.6;padding-left:12px;position:relative}
+.footer-item::before{content:"•";position:absolute;left:0;color:#ccc}
+.footer-brand{text-align:center;margin-top:30px;padding-top:20px;border-top:1px dashed #eee}
+.footer-brand .mark{font-size:18px;font-weight:700;letter-spacing:4px;color:#ddd}
+.footer-brand .sub{font-size:10px;color:#ddd;margin-top:4px;letter-spacing:2px}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:1000}
+.toast.show{opacity:1}
+.empty-state{text-align:center;padding:60px 20px;color:#ccc;font-size:14px}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <!-- 图片滑动区域 -->
-    <div class="gallery-container">
-        <!-- 注意：这里的 src 路径必须和你 GitHub 仓库里的路径一致 -->
-        <!-- 假设图片和 html 在同一个文件夹，或者你在 images 文件夹外 -->
-        <div class="gallery-item"><img src="images/A69-2.jpg" alt="主图"></div>
-        <div class="gallery-item"><img src="images/A69-2-1.jpg" alt="细节1"></div>
-        <div class="gallery-item"><img src="images/A69-2-2.jpg" alt="细节2"></div>
-        <div class="gallery-item"><img src="images/A69-2-3.jpg" alt="细节3"></div>
-    </div>
-
-    <!-- 商品信息 -->
-    <div class="product-info">
-        <div class="price-tag">¥1280</div>
-        <div class="product-title">石玉料工艺老型单圈 (7mm/8mm | 28颗)</div>
-
-        <!-- 详情表格 -->
-        <table class="detail-table">
-            <tr>
-                <th>编号</th>
-                <td>A69-2</td>
-            </tr>
-            <tr>
-                <th>分类</th>
-                <td>大类目：老型单圈 > 细分类目X > 2标准</td>
-            </tr>
-            <tr>
-                <th>规格</th>
-                <td>7mm/8mm | 28颗</td>
-            </tr>
-            <tr>
-                <th>品相</th>
-                <td>月留白均匀细星</td>
-            </tr>
-            <tr>
-                <th>快递</th>
-                <td>京东空运包邮</td>
-            </tr>
-            <tr>
-                <th>备注</th>
-                <td>无</td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- 底部留白，防止内容被按钮遮挡 -->
-    <div style="height: 60px;"></div>
+<div class="header">
+    <div class="brand-mark">J·B·S</div>
+    <div class="brand-sub">诀别诗 制 · 产品销售</div>
 </div>
 
-<!-- 底部固定栏 -->
-<div class="footer-bar">
-    <button class="buy-btn">立即购买 / 咨询客服</button>
+<div class="filter-container">
+    <div class="filter-label">产品分类</div>
+    <div class="filter-scroll" id="mainFilter">
+        <div class="filter-tag active" onclick="switchCategory(this, 'all')">全部</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'round')">长串圆珠</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'old')">长串老型</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'wuxiang')">长串无相</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'single-round')">单圈圆珠</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'single-old')">单圈老型</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'single-wuxiang')">单圈无相</div>
+    </div>
+    <div class="sub-filter-scroll" id="sub-filter-area"></div>
 </div>
 
+<div class="product-list" id="product-container">
+    <div class="empty-state">暂无商品，请联系客服咨询</div>
+</div>
+
+<div class="footer">
+    <div class="custom-note">若无满意现货 可联系客服进行个人定制服务</div>
+    <div class="footer-title">售后须知</div>
+    <div class="footer-item">签收后12小时内可退换货，货品可以拆封查看，超过时效无法退换，特殊原因可联系客服。</div>
+    <div class="footer-item">人为损坏不在退换范围内。</div>
+    <div class="footer-item">产品图片均为实物拍摄，因光线不同可能存在轻微色差，以实物为准。</div>
+    <div class="footer-item">一经盘玩（挂瓷上色）恕不退换，请确认无误后再上手。</div>
+    <div class="footer-brand">
+        <div class="mark">JBS</div>
+        <div class="sub">诀别诗 制</div>
+    </div>
+</div>
+
+<div class="toast" id="toast">微信号 SHUN9285 已复制</div>
+
+<script>
+const DATA_URL='products.json';
+const subCategories={
+    'all':['全部规格'],
+    'round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'single-round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'single-old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'single-wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级']
+};
+let allProducts=[];
+let currentCategory='all';
+let currentSubCategory='全部规格';
+
+async function loadProducts(){
+    try{
+        const r=await fetch(DATA_URL+'?t='+Date.now());
+        if(!r.ok) throw new Error();
+        allProducts=await r.json();
+        renderProducts()
+    }catch(e){
+        document.getElementById('product-container').innerHTML='<div class="empty-state">暂无商品，请联系客服咨询</div>'
+    }
+}
+
+function renderProducts(){
+    const c=document.getElementById('product-container');
+    const f=allProducts.filter(p=>{
+        const catMatch = currentCategory==='all' || p.category===currentCategory;
+        const subMatch = currentSubCategory==='全部规格' || p.grade===currentSubCategory;
+        return catMatch && subMatch;
+    });
+    
+    if(f.length===0){
+        c.innerHTML='<div class="empty-state">该分类暂无商品</div>';
+        return
+    }
+    c.innerHTML=f.map(p=>{
+        // 处理详情文字
+        const dh=(p.details||'').split('\n').map(l=>{
+            const i=l.indexOf('：');
+            if(i>-1) return '<div class="detail-item"><span class="detail-label">'+l.substring(0,i+1)+'</span><span class="detail-value">'+l.substring(i+1)+'</span></div>';
+            return l?'<div class="detail-item"><span class="detail-value">'+l+'</span></div>':''
+        }).join('');
+
+        // 核心：处理多图滑动
+        const imgs = p.image.split(',').map(src => '<img src="'+src.trim()+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">').join('');
+
+        return '<div class="product-card"><div class="product-img-box">'+imgs+'</div><div class="product-info"><div class="info-row"><span class="product-no">编号：'+p.no+'</span><span class="product-grade">'+p.grade+'</span></div><div class="product-title">'+p.name+'</div><div class="detail-list">'+dh+'</div><div class="price-tag">¥ '+p.price+'<span>/条</span></div><button class="btn-contact" onclick="copyWechat()">点击咨询</button></div></div>'
+    }).join('')
+}
+
+function switchCategory(el,type){
+    document.querySelectorAll('#mainFilter .filter-tag').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    currentCategory=type;
+    currentSubCategory='全部规格';
+    const sc=document.getElementById('sub-filter-area');
+    sc.innerHTML='';
+    const items=subCategories[type]||subCategories['all'];
+    items.forEach(item=>{
+        const tag=document.createElement('div');
+        tag.className='sub-tag';
+        tag.innerText=item;
+        tag.onclick=function(){
+            document.querySelectorAll('.sub-tag').forEach(t=>t.classList.remove('active'));
+            this.classList.add('active');
+            currentSubCategory=item;
+            renderProducts();
+        };
+        sc.appendChild(tag)
+    });
+    if(sc.firstChild) sc.firstChild.classList.add('active');
+    sc.classList.add('show');
+    renderProducts()
+}
+
+function copyWechat(){
+    const w="SHUN9285";
+    if(navigator.clipboard&&window.isSecureContext){
+        navigator.clipboard.writeText(w).then(showToast)
+    }else{
+        const ta=document.createElement("textarea");
+        ta.value=w;ta.style.position="fixed";ta.style.left="-9999px";
+        document.body.appendChild(ta);ta.focus();ta.select();
+        try{document.execCommand('copy');showToast()}catch(e){alert("请手动添加微信号："+w)}
+        document.body.removeChild(ta)
+    }
+}
+
+function showToast(){
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2000)
+}
+
+loadProducts();
+</script>
 </body>
 </html>
