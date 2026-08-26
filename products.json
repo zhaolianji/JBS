@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "category": "round",
+    "image": "https://via.placeholder.com/400x400.png?text=JBS-001",
+    "no": "JBS-001",
+    "grade": "X·1基础",
+    "name": "7mm 脱脂原生态石玉圆珠 108",
+    "details": "料子：脱脂原生态石玉料（顺白）\n器形：圆珠\n规格：7mm × 108粒\n品相：顺白无阴皮，正月，孔道规整\n工艺：高密顺白，正月无留白\n备注：现货，顺丰包邮",
+    "price": "售价待填"
+  },
+  {
+    "id": 2,
+    "category": "old",
+    "image": "https://via.placeholder.com/400x400.png?text=JBS-002",
+    "no": "JBS-002",
+    "grade": "X·2标准",
+    "name": "8mm 老型珠 手持",
+    "details": "料子：xxx\n器形：老型\n规格：8mm\n品相：xxx",
+    "price": "399"
+  },
+  {
+    "id": 3,
+    "category": "wuxiang",
+    "image": "https://via.placeholder.com/400x400.png?text=JBS-003",
+    "no": "JBS-003",
+    "grade": "X·2+进阶",
+    "name": "10mm 长串无相 108",
+    "details": "料子：高瓷无相\n器形：无相\n规格：10mm × 108粒\n品相：工艺精湛",
+    "price": "899"
+  },
+  {
+    "id": 4,
+    "category": "single-wuxiang",
+    "image": "https://via.placeholder.com/400x400.png?text=JBS-004",
+    "no": "JBS-004",
+    "grade": "特殊等级",
+    "name": "15mm 单圈无相 孤品",
+    "details": "料子：极品孤品\n器形：无相\n规格：15mm 单圈\n品相：特殊纹理，仅此一条",
+    "price": "2599"
+  }
+]
