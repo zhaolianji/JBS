@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JBS 诀别诗制</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 顶部导航栏 */
+        header {
+            background-color: #000;
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #aaa;
+        }
+
+        /* 主视觉区域 (Hero Section) */
+        .hero {
+            height: 80vh; /* 占据屏幕高度的80% */
+            background-color: #e0e0e0; /* 这里可以用一张背景图替换 */
+            background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop'); /* 示例背景图 */
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 0 20px;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background-color: #fff;
+            color: #000;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #000;
+            color: #fff;
+        }
+
+        /* 产品展示区 */
+        .products {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: #fff;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 250px;
+            background-color: #ddd;
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        .product-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .product-price {
+            color: #d9534f;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* 页脚 */
+        footer {
+            background-color: #333;
+            color: #ccc;
+            text-align: center;
+            padding: 2rem;
+            margin-top: auto;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1rem; }
+            header { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <header>
+        <div class="logo">JBS 诀别诗制</div>
+        <nav>
+            <ul>
+                <li><a href="#">首页</a></li>
+                <li><a href="#">新品系列</a></li>
+                <li><a href="#">品牌故事</a></li>
+                <li><a href="#">联系我们</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- 主视觉海报区 -->
+    <section class="hero">
+        <h1>定义你的独特风格</h1>
+        <p>JBS 2024 春夏系列 —— 极简与重构</p>
+        <a href="#" class="btn">立即选购</a>
+    </section>
+
+    <!-- 产品展示区 -->
+    <section class="products">
+        <!-- 产品卡片 1 -->
+        <div class="product-card">
+            <!-- 这里使用了占位图片，你可以替换成真实的衣服图片链接 -->
+            <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop" alt="时尚女装" class="product-image">
+            <h3 class="product-title">复古印花连衣裙</h3>
+            <p class="product-price">¥ 399.00</p>
+        </div>
+
+        <!-- 产品卡片 2 -->
+        <div class="product-card">
+            <img src="https://images.unsplash.com/photo-1529139574466-a302c27e3844?q=80&w=1000&auto=format&fit=crop" alt="男士外套" class="product-image">
+            <h3 class="product-title">极简剪裁风衣</h3>
+            <p class="product-price">¥ 599.00</p>
+        </div>
+
+        <!-- 产品卡片 3 -->
+        <div class="product-card">
+            <img src="https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=1000&auto=format&fit=crop" alt="配饰" class="product-image">
+            <h3 class="product-title">经典百搭白T</h3>
+            <p class="product-price">¥ 99.00</p>
+        </div>
+    </section>
+
+    <!-- 底部信息 -->
+    <footer>
+        <p>&copy; 2024 JBS 诀别诗制. All Rights Reserved.</p>
+        <p>地址：某某时尚创意园 A栋 101室 | 电话：123-4567-8900</p>
+    </footer>
+
+</body>
+</html>
