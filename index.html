@@ -64,10 +64,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
         <div class="filter-tag active" onclick="switchCategory(this, 'all')">全部</div>
         <div class="filter-tag" onclick="switchCategory(this, 'round')">长串圆珠</div>
         <div class="filter-tag" onclick="switchCategory(this, 'old')">长串老型</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'drum')">长串鼓珠</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'wuxiang')">长串无相</div>
         <div class="filter-tag" onclick="switchCategory(this, 'single-round')">单圈圆珠</div>
         <div class="filter-tag" onclick="switchCategory(this, 'single-old')">单圈老型</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'single-none')">单圈无相</div>
+        <div class="filter-tag" onclick="switchCategory(this, 'single-wuxiang')">单圈无相</div>
     </div>
     <div class="sub-filter-scroll" id="sub-filter-area"></div>
 </div>
@@ -96,15 +96,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 const DATA_URL='products.json';
 const subCategories={
     'all':['全部规格'],
-    'round':['X·1基础','X·2标准','X2+进阶','X·3史诗','特殊等级'],
-    'old':['X·1基础','X·2标准','X2+进阶','X·3史诗','特殊等级'],
-    'drum':['X·1基础','X·2标准','X2+进阶','X·3史诗','特殊等级'],
-    'single-round':['X·1基础','X·2标准'],
-    'single-old':['X·1基础','X·2标准'],
-    'single-none':['X·1基础','X·2标准']
+    'round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'single-round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'single-old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
+    'single-wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级']
 };
 let allProducts=[];
 let currentCategory='all';
+let currentSubCategory='全部规格';
 
 async function loadProducts(){
     try{
@@ -119,7 +120,12 @@ async function loadProducts(){
 
 function renderProducts(){
     const c=document.getElementById('product-container');
-    const f=allProducts.filter(p=>currentCategory==='all'||p.category===currentCategory);
+    const f=allProducts.filter(p=>{
+        const catMatch = currentCategory==='all' || p.category===currentCategory;
+        const subMatch = currentSubCategory==='全部规格' || p.grade===currentSubCategory;
+        return catMatch && subMatch;
+    });
+    
     if(f.length===0){
         c.innerHTML='<div class="empty-state">该分类暂无商品</div>';
         return
@@ -138,6 +144,7 @@ function switchCategory(el,type){
     document.querySelectorAll('#mainFilter .filter-tag').forEach(t=>t.classList.remove('active'));
     el.classList.add('active');
     currentCategory=type;
+    currentSubCategory='全部规格';
     const sc=document.getElementById('sub-filter-area');
     sc.innerHTML='';
     const items=subCategories[type]||subCategories['all'];
@@ -147,7 +154,9 @@ function switchCategory(el,type){
         tag.innerText=item;
         tag.onclick=function(){
             document.querySelectorAll('.sub-tag').forEach(t=>t.classList.remove('active'));
-            this.classList.add('active')
+            this.classList.add('active');
+            currentSubCategory=item;
+            renderProducts();
         };
         sc.appendChild(tag)
     });
