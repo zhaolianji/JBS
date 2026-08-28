@@ -107,18 +107,40 @@ const CATEGORY_ALIAS={
     '圆珠长串':'长串圆珠','老型长串':'长串老型','无相长串':'长串无相',
     '长串圆珠':'长串圆珠','长串老型':'长串老型','长串无相':'长串无相'
 };
+/* 字段名容错：中文手滑写成 编号/等级/价格/详情 等也能正常读取 */
+const FIELD_ALIAS={
+    no:['编号'],
+    name:['名称','产品名'],
+    grade:['等级','细分类目','级别'],
+    price:['价格','单价'],
+    details:['详情'],
+    image:['图片','主图'],
+    category:['类目','大类目','分类']
+};
 function normalizeProduct(p){
+    for(const k in FIELD_ALIAS){
+        if(p[k]===undefined){
+            const alts=FIELD_ALIAS[k];
+            for(let i=0;i<alts.length;i++){
+                if(p[alts[i]]!==undefined){ p[k]=p[alts[i]]; break; }
+            }
+        }
+    }
+    if(p.price!==undefined){ const n=Number(p.price); if(!isNaN(n)) p.price=n; }
     if(p.category) p.category=CATEGORY_ALIAS[p.category]||p.category;
-    /* 兼容 price 字段被误写成中文"价格"的情况 */
-    if(p.price===undefined&&p['价格']!==undefined) p.price=p['价格'];
-    if(p.grade===undefined&&p['细分类目']!==undefined) p.grade=p['细分类目'];
 }
 
 async function loadProducts(){
     try{
         const r=await fetch(DATA_URL+'?t='+Date.now());
         if(!r.ok) throw new Error();
-        allProducts=await r.json();
+        let txt=await r.text();
+        /* 容错修复：中文弯引号（手动编辑常见错误）导致 JSON 解析失败 */
+        txt=txt.replace(/[\u201C\u201D\u2018\u2019]/g,'"');
+        try{
+            allProducts=JSON.parse(txt);
+            if(!Array.isArray(allProducts)) allProducts=[];
+        }catch(e2){ allProducts=[]; }
         allProducts.forEach(normalizeProduct);
     }catch(e){
         allProducts=[];
@@ -267,7 +289,7 @@ function bindGallery(){
             requestAnimationFrame(()=>{
                 const idx=Math.min(imgs.length-1,Math.round(box.scrollLeft/box.clientWidth));
                 点.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
-                  ticking=false;
+                   ticking=false;
             });
         });
     });
@@ -280,7 +302,7 @@ function copyWechat(){
     }else{
         const ta=document.createElement("textarea");
         ta.value=w;ta.style.position="fixed";ta.style.left="-9999px";
-        文档.主体.appendChild(ta);ta.焦点();ta.选择();
+        文档.主体.追加子节点(ta);ta.焦点();ta.选择();
         尝试{文档.执行命令('复制');显示Toast()}捕获(e){警告("请手动添加微信号："+w)}
         文档.主体.移除子节点(ta)
     }
