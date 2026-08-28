@@ -101,11 +101,25 @@ let subCategories={};
 let currentCategory='all';
 let currentSubCategory='全部规格';
 
+/* 类目归一化：同义类目统一为一种叫法，避免重复显示（如"单圈老型"="老型单圈"） */
+const CATEGORY_ALIAS={
+    '单圈圆珠':'圆珠单圈','单圈老型':'老型单圈','单圈无相':'无相单圈',
+    '圆珠长串':'长串圆珠','老型长串':'长串老型','无相长串':'长串无相',
+    '长串圆珠':'长串圆珠','长串老型':'长串老型','长串无相':'长串无相'
+};
+function normalizeProduct(p){
+    if(p.category) p.category=CATEGORY_ALIAS[p.category]||p.category;
+    /* 兼容 price 字段被误写成中文"价格"的情况 */
+    if(p.price===undefined&&p['价格']!==undefined) p.price=p['价格'];
+    if(p.grade===undefined&&p['细分类目']!==undefined) p.grade=p['细分类目'];
+}
+
 async function loadProducts(){
     try{
         const r=await fetch(DATA_URL+'?t='+Date.now());
         if(!r.ok) throw new Error();
         allProducts=await r.json();
+        allProducts.forEach(normalizeProduct);
     }catch(e){
         allProducts=[];
     }
@@ -195,12 +209,41 @@ function renderProducts(){
             return l?'<div class="detail-item"><span class="detail-value">'+l+'</span></div>':''
         }).join('');
 
-        // 核心：处理多图滑动
-        const imgs = p.image.split(',').map(src => '<img src="'+src.trim()+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">').join('');
+        // 核心：处理多图滑动（首图直载，其余懒加载，减少同时下载量）
+        const imgs = p.image.split(',').map((src,i)=>{
+            const s=src.trim();
+            if(i===0) return '<img src="'+s+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">';
+            return '<img data-src="'+s+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">';
+        }).join('');
 
         return '<div class="product-card"><div class="gallery-wrap"><div class="product-img-box">'+imgs+'</div><div class="img-dots"></div></div><div class="product-info"><div class="info-row"><span class="product-no">编号：'+p.no+'</span><span class="product-grade">'+p.grade+'</span></div><div class="product-title">'+p.name+'</div><div class="detail-list">'+dh+'</div><div class="price-tag">¥ '+p.price+'<span>/条</span></div><button class="btn-contact" onclick="copyWechat()">点击咨询</button></div></div>'
     }).join('');
     bindGallery();
+    bindLazyLoad();
+}
+
+/* 懒加载：卡片滚近视口时才加载该卡片的其余图片，避免 28 张图同时下载拖慢网速 */
+function bindLazyLoad(){
+    const wraps=document.querySelectorAll('.gallery-wrap');
+    const loadCard=box=>{
+        box.querySelectorAll('img[data-src]').forEach(img=>{
+            img.src=img.getAttribute('data-src');
+            img.removeAttribute('data-src');
+        });
+    };
+    if(!('IntersectionObserver' in window)){
+        wraps.forEach(wrap=>loadCard(wrap.querySelector('.product-img-box')));
+        return;
+    }
+    const io=new IntersectionObserver(entries=>{
+        entries.forEach(en=>{
+            if(en.isIntersecting){
+                loadCard(en.target.querySelector('.product-img-box'));
+                io.unobserve(en.target);
+            }
+        });
+    },{rootMargin:'800px 0px'});
+    wraps.forEach(wrap=>io.observe(wrap));
 }
 
 /* 多图滑动指示点：滚动时同步高亮 */
@@ -210,21 +253,21 @@ function bindGallery(){
         const dots=wrap.querySelector('.img-dots');
         const imgs=box.querySelectorAll('img');
         if(imgs.length<2){ dots.style.display='none'; return; }
-        dots.style.display='';
-        dots.innerHTML='';
-        for(let i=0;i<imgs.length;i++){
+        点.样式.显示='';
+        点.innerHTML='';
+        对于(让 i=0;i<imgs.长度;i++){
             const d=document.createElement('span');
             d.className='img-dot'+(i===0?' active':'');
-            dots.appendChild(d);
+            点.appendChild(d);
         }
         let ticking=false;
         box.addEventListener('scroll',()=>{
             if(ticking) return;
-            ticking=true;
+             计时=真;
             requestAnimationFrame(()=>{
                 const idx=Math.min(imgs.length-1,Math.round(box.scrollLeft/box.clientWidth));
-                dots.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
-                ticking=false;
+                点.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+                  ticking=false;
             });
         });
     });
@@ -232,18 +275,18 @@ function bindGallery(){
 
 function copyWechat(){
     const w="SHUN9285";
-    if(navigator.clipboard&&window.isSecureContext){
-        navigator.clipboard.writeText(w).then(showToast)
+    如果(navigator.clipboard&&window.是安全上下文){
+        导航器.剪贴板.写入文本(w).则(显示Toast)
     }else{
         const ta=document.createElement("textarea");
         ta.value=w;ta.style.position="fixed";ta.style.left="-9999px";
-        document.body.appendChild(ta);ta.focus();ta.select();
-        try{document.execCommand('copy');showToast()}catch(e){alert("请手动添加微信号："+w)}
-        document.body.removeChild(ta)
+        文档.主体.appendChild(ta);ta.焦点();ta.选择();
+        尝试{文档.执行命令('复制');显示Toast()}捕获(e){警告("请手动添加微信号："+w)}
+        文档.主体.移除子节点(ta)
     }
 }
 
-function showToast(){
+函数 显示Toast(){
     const t=document.getElementById('toast');
     t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'),2000)
