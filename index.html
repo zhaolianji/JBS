@@ -94,8 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 
 <script>
 const DATA_URL='products.json';
-/* 固定大类目顺序；若 products.json 中出现新的大类目，会自动追加到末尾 */
-const MAIN_CATEGORIES=['长串圆珠','长串老型','长串无相','单圈圆珠','单圈老型','单圈无相'];
+/* 大类目完全由 products.json 数据自动生成，顺序按产品在数据中出现的先后 */
 let allProducts=[];
 let mainCategories=[];
 let subCategories={};
@@ -123,9 +122,9 @@ function subsFor(list){
     return arr;
 }
 
-/* 大类目 = 固定列表 + 数据中新出现的类目；细分类目按各大类目下的实际数据生成 */
+/* 大类目按数据中实际出现的类目去重生成；细分类目按各大类目下的实际数据生成 */
 function buildFilters(){
-    mainCategories=MAIN_CATEGORIES.slice();
+    mainCategories=[];
     allProducts.forEach(p=>{
         if(p.category&&mainCategories.indexOf(p.category)===-1) mainCategories.push(p.category);
     });
