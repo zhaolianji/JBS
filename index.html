@@ -299,119 +299,135 @@ function showToast(){
 }
 
 loadProducts();
-</script><!-- ================= 手机端体验增强脚本开始 ================= -->
-
-<!-- 1. 添加样式 (CSS) -->
+</script>
+<!--===================== 手机端体验增强脚本开始 =====================-->
 <style>
-    /* 图片淡入效果 */
-    .enhanced-img {
-        opacity: 0;
-        transition: opacity 0.5s ease-in-out;
-        /* 手机端不需要鼠标样式，可以注释掉或保留 */
-        /* cursor: pointer; */
-    }
-    .enhanced-img.loaded {
-        opacity: 1;
-    }
-
-    /* 图片加载失败的占位样式 */
-    .img-error-placeholder {
-        width: 100%;
-        height: 200px;
-        background-color: #f0f0f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #666;
-        font-size: 14px;
-        border: 1px dashed #ccc;
-        /* 手机端点击区域要足够大 */
-        touch-action: manipulation;
-    }
-
-    /* 图片放大预览的遮罩层 */
-    .img-preview-overlay {
-        display: none;
+    /* 顶部加载进度条 */
+    #jbs-progress-bar {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.95); /* 背景更黑一点，突出图片 */
-        z-index: 9999;
+        width: 0%;
+        height: 3px;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+        z-index: 99999;
+        transition: width 0.3s ease, opacity 0.5s ease;
+        box-shadow: 0 0 8px rgba(79, 172, 254, 0.6);
+    }
+    #jbs-progress-bar.done { opacity: 0; }
+
+    /* 预览遮罩层 */
+    .img-preview-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.9);
         justify-content: center;
         align-items: center;
-        /* 防止在预览大图时，底层页面跟着滚动 */
-        touch-action: none;
+        z-index: 9999;
     }
     .img-preview-overlay img {
-        max-width: 100%; /* 手机端图片宽度占满屏幕 */
-        max-height: 100%;
-        /* 允许用户双指缩放、滑动查看大图 */
-        touch-action: pan-x pan-y pinch-zoom;
+        max-width: 95%; max-height: 95%;
+        object-fit: contain;
     }
 </style>
 
-<!-- 2. 添加功能逻辑 (JavaScript) -->
+<!-- 进度条HTML结构 -->
+<div id="jbs-progress-bar"></div>
+<!-- 预览遮罩HTML结构 -->
+<div class="img-preview-overlay" id="jbs-preview-overlay">
+    <img src="" alt="preview" id="preview-img">
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- 功能1 & 2: 图片淡入 + 加载失败处理 ---
-        const images = document.querySelectorAll('img');
-        images.forEach(img => {
-            img.classList.add('enhanced-img');
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBar = document.getElementById('jbs-progress-bar');
+    const overlay = document.getElementById('jbs-preview-overlay');
+    const overlayImg = document.getElementById('preview-img');
+    const images = document.querySelectorAll('img');
+    
+    let totalImages = images.length;
+    let loadedCount = 0;
 
-            img.onload = function() {
-                this.classList.add('loaded');
+    // 1. 更新顶部进度条
+    function updateProgress() {
+        loadedCount++;
+        const percent = Math.min((loadedCount / totalImages) * 100, 100);
+        progressBar.style.width = percent + '%';
+        if (loadedCount >= totalImages) {
+            setTimeout(() => progressBar.classList.add('done'), 800);
+        }
+    }
+
+    // 2. 处理每张图：淡入动画 + 加载提示 + 失败重试
+    images.forEach(img => {
+        // 排除宽高为0的隐藏图标
+        if (img.width === 0 && img.height === 0) return;
+
+        const loadingMsg = document.createElement('div');
+        loadingMsg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#999;font-size:13px;text-align:center;pointer-events:auto;cursor:pointer;background:rgba(255,255,255,0.8);padding:6px 12px;border-radius:4px;z-index:10;user-select:none;';
+        loadingMsg.textContent = '正在加载...';
+
+        img.style.opacity = '0';
+        img.style.transition = 'opacity 0.6s ease';
+
+        // 确保父级是相对定位，以便loadingMsg居中
+        let parent = img.parentNode;
+        if (window.getComputedStyle(parent).position === 'static') {
+            parent.style.position = 'relative';
+        }
+        parent.appendChild(loadingMsg);
+
+        function hideLoading() {
+            if (loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
+        }
+
+        // 成功加载
+        img.onload = function() {
+            hideLoading();
+            this.style.opacity = '1';
+            updateProgress();
+        };
+
+        // 加载失败
+        img.onerror = function() {
+            loadingMsg.textContent = '加载失败\n(点击重试)';
+            loadingMsg.style.color = '#ff6b6b';
+            loadingMsg.style.background = 'rgba(255,240,240,0.9)';
+            
+            // 点击重新加载
+            loadingMsg.onclick = function(e) {
+                e.stopPropagation(); // 防止触发图片放大
+                loadingMsg.textContent = '正在加载...';
+                loadingMsg.style.color = '#999';
+                loadingMsg.style.background = 'rgba(255,255,255,0.8)';
+                img.src = img.src; // 重新触发加载
             };
+            updateProgress();
+        };
+    });
 
-            img.onerror = function() {
-                const placeholder = document.createElement('div');
-                placeholder.className = 'img-error-placeholder';
-                placeholder.innerHTML = '图片加载失败，点击重试';
-                placeholder.onclick = () => location.reload();
-                this.style.display = 'none';
-                this.parentNode.insertBefore(placeholder, this);
-            };
-        });
-
-        // --- 功能3: 图片点击放大预览 (适配手机端) ---
-        const overlay = document.createElement('div');
-        overlay.className = 'img-preview-overlay';
-        const overlayImg = document.createElement('img');
-        overlay.appendChild(overlayImg);
-        document.body.appendChild(overlay);
-
-        images.forEach(img => {
-            // 使用 touchend 事件替代 click，在手机端响应更快
-            img.addEventListener('touchend', function(e) {
-                if (this.style.display === 'none') return;
-                // 阻止事件冒泡，防止触发 overlay 的关闭事件
-                e.stopPropagation();
-                
-                overlayImg.src = this.src;
-                overlay.style.display = 'flex';
-            });
-            // 同时保留 click 事件，兼容部分设备
-            img.addEventListener('click', function(e) {
-                if (this.style.display === 'none') return;
-                e.stopPropagation();
-                overlayImg.src = this.src;
-                overlay.style.display = 'flex';
-            });
-        });
-
-        // 点击遮罩层空白处，关闭预览
-        overlay.addEventListener('click', function() {
-            overlay.style.display = 'none';
-        });
-        // 同样为遮罩层添加 touchend 事件
-        overlay.addEventListener('touchend', function() {
-            overlay.style.display = 'none';
+    // 3. 图片点击放大
+    images.forEach(img => {
+        img.addEventListener('click', function(e) {
+            e.stopPropagation();
+            overlayImg.src = this.src;
+            overlay.style.display = 'flex';
         });
     });
-</script>
 
-<!-- ================= 手机端体验增强脚本结束 ================= -->
-</body>
-</html>
+    // 4. 点击遮罩关闭
+    overlay.addEventListener('click', function() {
+        this.style.display = 'none';
+    });
+
+    // 如果页面没有图片，直接跑满进度条
+    if (totalImages === 0) {
+        progressBar.style.width = '100%';
+        setTimeout(() => progressBar.classList.add('done'), 500);
+    }
+});
+</script>
+<!--===================== 手机端体验增强脚本结束 =====================-->
  
