@@ -24,9 +24,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .product-card{background:#fff;border-radius:12px;margin-bottom:20px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.03)}
 
 /* 多图滑动样式 */
+.gallery-wrap{position:relative}
 .product-img-box{width:100%;aspect-ratio:1/1;background:#eef0f2;overflow-x:auto;scroll-snap-type:x mandatory;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .product-img-box::-webkit-scrollbar{display:none}
 .product-img-box img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block;scroll-snap-align:center}
+
+/* 图片指示点 */
+.img-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:5px;pointer-events:none}
+.img-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.25);transition:all .2s}
+.img-dot.active{background:#fff;width:16px;border-radius:3px}
 
 .product-info{padding:16px}
 .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -63,15 +69,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 
 <div class="filter-container">
     <div class="filter-label">产品分类</div>
-    <div class="filter-scroll" id="mainFilter">
-        <div class="filter-tag active" onclick="switchCategory(this, 'all')">全部</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'round')">长串圆珠</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'old')">长串老型</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'wuxiang')">长串无相</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'single-round')">单圈圆珠</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'single-old')">单圈老型</div>
-        <div class="filter-tag" onclick="switchCategory(this, 'single-wuxiang')">单圈无相</div>
-    </div>
+    <div class="filter-scroll" id="mainFilter"></div>
     <div class="sub-filter-scroll" id="sub-filter-area"></div>
 </div>
 
@@ -96,16 +94,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 
 <script>
 const DATA_URL='products.json';
-const subCategories={
-    'all':['全部规格'],
-    'round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
-    'old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
-    'wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
-    'single-round':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
-    'single-old':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级'],
-    'single-wuxiang':['X·1基础','X·2标准','X·2+进阶','X·3史诗','特殊等级']
-};
+/* 固定大类目顺序；若 products.json 中出现新的大类目，会自动追加到末尾 */
+const MAIN_CATEGORIES=['长串圆珠','长串老型','长串无相','单圈圆珠','单圈老型','单圈无相'];
 let allProducts=[];
+let mainCategories=[];
+let subCategories={};
 let currentCategory='all';
 let currentSubCategory='全部规格';
 
@@ -114,10 +107,73 @@ async function loadProducts(){
         const r=await fetch(DATA_URL+'?t='+Date.now());
         if(!r.ok) throw new Error();
         allProducts=await r.json();
-        renderProducts()
     }catch(e){
-        document.getElementById('product-container').innerHTML='<div class="empty-state">暂无商品，请联系客服咨询</div>'
+        allProducts=[];
     }
+    buildFilters();
+    renderMainFilter();
+    renderSubFilter();
+    renderProducts();
+}
+
+/* 汇总某范围内的细分类目（去重、保持出现顺序） */
+function subsFor(list){
+    const arr=['全部规格'];
+    list.forEach(p=>{ if(p.grade&&arr.indexOf(p.grade)===-1) arr.push(p.grade); });
+    return arr;
+}
+
+/* 大类目 = 固定列表 + 数据中新出现的类目；细分类目按各大类目下的实际数据生成 */
+function buildFilters(){
+    mainCategories=MAIN_CATEGORIES.slice();
+    allProducts.forEach(p=>{
+        if(p.category&&mainCategories.indexOf(p.category)===-1) mainCategories.push(p.category);
+    });
+    subCategories={'all':subsFor(allProducts)};
+    mainCategories.forEach(cat=>{
+        subCategories[cat]=subsFor(allProducts.filter(p=>p.category===cat));
+    });
+}
+
+function renderMainFilter(){
+    const box=document.getElementById('mainFilter');
+    box.innerHTML='';
+    const mk=(label,type)=>{
+        const t=document.createElement('div');
+        t.className='filter-tag'+(currentCategory===type?' active':'');
+        t.innerText=label;
+        t.onclick=()=>switchCategory(type);
+        box.appendChild(t);
+    };
+    mk('全部','all');
+    mainCategories.forEach(c=>mk(c,c));
+}
+
+function renderSubFilter(){
+    const sc=document.getElementById('sub-filter-area');
+    sc.innerHTML='';
+    const items=subCategories[currentCategory]||['全部规格'];
+    if(items.indexOf(currentSubCategory)===-1) currentSubCategory='全部规格';
+    items.forEach(item=>{
+        const tag=document.createElement('div');
+        tag.className='sub-tag'+(item===currentSubCategory?' active':'');
+        tag.innerText=item;
+        tag.onclick=function(){
+            currentSubCategory=item;
+            renderSubFilter();
+            renderProducts();
+        };
+        sc.appendChild(tag);
+    });
+    sc.classList.add('show');
+}
+
+function switchCategory(type){
+    currentCategory=type;
+    currentSubCategory='全部规格';
+    renderMainFilter();
+    renderSubFilter();
+    renderProducts();
 }
 
 function renderProducts(){
@@ -127,7 +183,7 @@ function renderProducts(){
         const subMatch = currentSubCategory==='全部规格' || p.grade===currentSubCategory;
         return catMatch && subMatch;
     });
-    
+
     if(f.length===0){
         c.innerHTML='<div class="empty-state">该分类暂无商品</div>';
         return
@@ -143,33 +199,36 @@ function renderProducts(){
         // 核心：处理多图滑动
         const imgs = p.image.split(',').map(src => '<img src="'+src.trim()+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">').join('');
 
-        return '<div class="product-card"><div class="product-img-box">'+imgs+'</div><div class="product-info"><div class="info-row"><span class="product-no">编号：'+p.no+'</span><span class="product-grade">'+p.grade+'</span></div><div class="product-title">'+p.name+'</div><div class="detail-list">'+dh+'</div><div class="price-tag">¥ '+p.price+'<span>/条</span></div><button class="btn-contact" onclick="copyWechat()">点击咨询</button></div></div>'
-    }).join('')
+        return '<div class="product-card"><div class="gallery-wrap"><div class="product-img-box">'+imgs+'</div><div class="img-dots"></div></div><div class="product-info"><div class="info-row"><span class="product-no">编号：'+p.no+'</span><span class="product-grade">'+p.grade+'</span></div><div class="product-title">'+p.name+'</div><div class="detail-list">'+dh+'</div><div class="price-tag">¥ '+p.price+'<span>/条</span></div><button class="btn-contact" onclick="copyWechat()">点击咨询</button></div></div>'
+    }).join('');
+    bindGallery();
 }
 
-function switchCategory(el,type){
-    document.querySelectorAll('#mainFilter .filter-tag').forEach(t=>t.classList.remove('active'));
-    el.classList.add('active');
-    currentCategory=type;
-    currentSubCategory='全部规格';
-    const sc=document.getElementById('sub-filter-area');
-    sc.innerHTML='';
-    const items=subCategories[type]||subCategories['all'];
-    items.forEach(item=>{
-        const tag=document.createElement('div');
-        tag.className='sub-tag';
-        tag.innerText=item;
-        tag.onclick=function(){
-            document.querySelectorAll('.sub-tag').forEach(t=>t.classList.remove('active'));
-            this.classList.add('active');
-            currentSubCategory=item;
-            renderProducts();
-        };
-        sc.appendChild(tag)
+/* 多图滑动指示点：滚动时同步高亮 */
+function bindGallery(){
+    document.querySelectorAll('.gallery-wrap').forEach(wrap=>{
+        const box=wrap.querySelector('.product-img-box');
+        const dots=wrap.querySelector('.img-dots');
+        const imgs=box.querySelectorAll('img');
+        if(imgs.length<2){ dots.style.display='none'; return; }
+        dots.style.display='';
+        dots.innerHTML='';
+        for(let i=0;i<imgs.length;i++){
+            const d=document.createElement('span');
+            d.className='img-dot'+(i===0?' active':'');
+            dots.appendChild(d);
+        }
+        let ticking=false;
+        box.addEventListener('scroll',()=>{
+            if(ticking) return;
+            ticking=true;
+            requestAnimationFrame(()=>{
+                const idx=Math.min(imgs.length-1,Math.round(box.scrollLeft/box.clientWidth));
+                dots.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+                ticking=false;
+            });
+        });
     });
-    if(sc.firstChild) sc.firstChild.classList.add('active');
-    sc.classList.add('show');
-    renderProducts()
 }
 
 function copyWechat(){
