@@ -22,13 +22,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .sub-tag.active{background:#fff;color:#333;border-color:#333;font-weight:600}
 .product-list{padding:16px;min-height:100px}
 .product-card{background:#fff;border-radius:12px;margin-bottom:20px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.03)}
+
+/* 顶部加载进度条 */
+.top-progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,#555,#1a1a1a);z-index:999;transition:width .35s ease,opacity .5s;opacity:0}
+.top-progress.on{opacity:1}
+
+/* 多图滑动样式 */
 .gallery-wrap{position:relative}
 .product-img-box{width:100%;aspect-ratio:1/1;background:#eef0f2;overflow-x:auto;scroll-snap-type:x mandatory;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .product-img-box::-webkit-scrollbar{display:none}
-.product-img-box img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block;scroll-snap-align:center}
+.img-slot{flex:0 0 100%;width:100%;height:100%;position:relative;scroll-snap-align:center}
+.img-slot img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* 图片加载状态层 */
+.img-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#eef0f2}
+.img-slot[data-mode="done"] .img-state{display:none}
+.st-loading,.st-failed{display:none;flex-direction:column;align-items:center;gap:10px;color:#999;font-size:13px}
+.img-slot[data-mode="loading"] .st-loading{display:flex}
+.img-slot[data-mode="failed"] .st-failed{display:flex}
+.spinner{width:26px;height:26px;border:3px solid #ddd;border-top-color:#666;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.st-failed{cursor:pointer;color:#b0b0b0}
+.st-failed .fail-ico{font-size:30px;opacity:.6}
+.st-failed em{font-style:normal;font-size:12px;color:#8a8a8a;border:1px solid #ccc;border-radius:14px;padding:3px 12px;margin-top:2px}
+.st-failed:active{opacity:.7}
+
+/* 图片指示点 */
 .img-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:5px;pointer-events:none}
 .img-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.25);transition:all .2s}
 .img-dot.active{background:#fff;width:16px;border-radius:3px}
+
 .product-info{padding:16px}
 .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .product-no{font-size:12px;color:#999;letter-spacing:.5px}
@@ -53,9 +76,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:1000}
 .toast.show{opacity:1}
 .empty-state{text-align:center;padding:60px 20px;color:#ccc;font-size:14px}
+.retry-state{text-align:center;padding:60px 20px;color:#999;font-size:14px}
+.retry-btn{display:inline-block;margin-top:14px;padding:8px 26px;background:#1a1a1a;color:#fff;border-radius:20px;font-size:13px;cursor:pointer}
 </style>
 </head>
 <body>
+
+<div class="top-progress" id="topProgress"></div>
 
 <div class="header">
     <div class="brand-mark">J·B·S</div>
@@ -69,7 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 </div>
 
 <div class="product-list" id="product-container">
-    <div class="empty-state">暂无商品，请联系客服咨询</div>
+    <div class="empty-state">加载中…</div>
 </div>
 
 <div class="footer">
@@ -95,6 +122,14 @@ let subCategories={};
 let currentCategory='all';
 let currentSubCategory='全部规格';
 
+/* ============ 顶部进度条 ============ */
+const bar=document.getElementById('topProgress');
+let trackedTotal=0, trackedDone=0, inFlight=0, barTimer=null;
+function barStart(){ trackedTotal++; inFlight++; bar.classList.add('on'); barUpdate(); }
+function barDone(){ trackedDone++; inFlight--; barUpdate(); if(inFlight<=0){ bar.style.width='100%'; clearTimeout(barTimer); barTimer=setTimeout(()=>{ bar.classList.remove('on'); setTimeout(()=>{bar.style.width='0';},500); trackedTotal=0; trackedDone=0; },350); } }
+function barUpdate(){ if(trackedTotal>0) bar.style.width=Math.min(96,Math.round(trackedDone/trackedTotal*100))+'%'; }
+
+/* ============ 类目归一化与字段容错 ============ */
 const CATEGORY_ALIAS={
     '单圈圆珠':'圆珠单圈','单圈老型':'老型单圈','单圈无相':'无相单圈',
     '圆珠长串':'长串圆珠','老型长串':'长串老型','无相长串':'长串无相'
@@ -122,10 +157,12 @@ function normalizeProduct(p){
 }
 
 async function loadProducts(){
+    document.getElementById('product-container').innerHTML='<div class="empty-state">加载中…</div>';
     try{
         const r=await fetch(DATA_URL+'?t='+Date.now());
         if(!r.ok) throw new Error();
         let txt=await r.text();
+        /* 容错修复：中文弯引号（手动编辑常见错误）统一替换为英文直引号 */
         txt=txt.replace(/[\u201C\u201D]/g,'"').replace(/[\u2018\u2019]/g,"'");
         try{
             allProducts=JSON.parse(txt);
@@ -135,12 +172,17 @@ async function loadProducts(){
     }catch(e){
         allProducts=[];
     }
+    if(allProducts.length===0){
+        document.getElementById('product-container').innerHTML='<div class="retry-state">商品数据加载失败<div class="retry-btn" onclick="loadProducts()">点击重新加载</div></div>';
+        return;
+    }
     buildFilters();
     renderMainFilter();
     renderSubFilter();
     renderProducts();
 }
 
+/* ============ 分类筛选 ============ */
 function subsFor(list){
     const arr=['全部规格'];
     list.forEach(p=>{ if(p.grade&&arr.indexOf(p.grade)===-1) arr.push(p.grade); });
@@ -199,6 +241,7 @@ function switchCategory(type){
     renderProducts();
 }
 
+/* ============ 渲染产品 ============ */
 function renderProducts(){
     const c=document.getElementById('product-container');
     const f=allProducts.filter(p=>{
@@ -218,34 +261,85 @@ function renderProducts(){
             return l?'<div class="detail-item"><span class="detail-value">'+l+'</span></div>':''
         }).join('');
 
+        /* 多图：每张图一个槽位，含加载/失败状态层；首图立即加载，其余懒加载 */
         const imgs = p.image.split(',').map((src,i)=>{
             const s=src.trim();
-            if(i===0) return '<img src="'+s+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">';
-            return '<img data-src="'+s+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">';
+            const lazy=i>0?' data-lazy="1"':'';
+            return '<div class="img-slot" data-mode="pending" data-src="'+s+'"'+lazy+'>'+
+                '<img alt="'+p.name+'">'+
+                '<div class="img-state">'+
+                    '<div class="st-loading"><div class="spinner"></div><span>图片加载中…</span></div>'+
+                    '<div class="st-failed"><span class="fail-ico">🖼️</span><span>图片加载失败</span><em>点击重试</em></div>'+
+                '</div></div>';
         }).join('');
 
         return '<div class="product-card"><div class="gallery-wrap"><div class="product-img-box">'+imgs+'</div><div class="img-dots"></div></div><div class="product-info"><div class="info-row"><span class="product-no">编号：'+(p.no||'')+'</span><span class="product-grade">'+(p.grade||'')+'</span></div><div class="product-title">'+p.name+'</div><div class="detail-list">'+dh+'</div><div class="price-tag">¥ '+p.price+'<span>/条</span></div><button class="btn-contact" onclick="copyWechat()">点击咨询</button></div></div>'
     }).join('');
+    bindImageSlots();
     bindGallery();
     bindLazyLoad();
 }
 
+/* ============ 图片加载：自动重试 + 点击重试 + 进度反馈 ============ */
+function bindImageSlots(){
+    document.querySelectorAll('.img-slot').forEach(slot=>{
+        const img=slot.querySelector('img');
+        const src=slot.getAttribute('data-src');
+        let attempt=0, settled=false;
+        const busted=n=>src+(src.indexOf('?')>-1?'&':'?')+'r='+n;
+
+        function begin(track){
+            slot.setAttribute('data-mode','loading');
+            if(track) barStart();
+            img.onload=()=>{
+                slot.setAttribute('data-mode','done');
+                if(!settled){ settled=true; if(track) barDone(); }
+            };
+            img.onerror=()=>{
+                attempt++;
+                if(attempt<=2){
+                    /* 自动重试：第1次1.5秒后、第2次3秒后 */
+                    setTimeout(()=>{ img.src=busted(attempt); }, attempt===1?1500:3000);
+                }else{
+                    slot.setAttribute('data-mode','failed');
+                    if(!settled){ settled=true; if(track) barDone(); }
+                }
+            };
+            img.src=attempt>0?busted(attempt):src;
+        }
+
+        /* 失败后点击重试 */
+        slot.querySelector('.st-failed').onclick=()=>{
+            if(slot.getAttribute('data-mode')!=='failed') return;
+            attempt=0; settled=false;
+            begin(true);
+        };
+
+        slot._begin=begin;
+        /* 首图立即加载 */
+        if(!slot.hasAttribute('data-lazy')) begin(true);
+    });
+}
+
+/* 懒加载：卡片滚近视口时才加载该卡片的其余图片 */
 function bindLazyLoad(){
     const wraps=document.querySelectorAll('.gallery-wrap');
-    const loadCard=box=>{
-        box.querySelectorAll('img[data-src]').forEach(img=>{
-            img.src=img.getAttribute('data-src');
-            img.removeAttribute('data-src');
+    const loadCard=wrap=>{
+        wrap.querySelectorAll('.img-slot[data-lazy]').forEach(slot=>{
+            if(slot.getAttribute('data-mode')==='pending'){
+                slot.removeAttribute('data-lazy');
+                slot._begin(true);
+            }
         });
     };
     if(!('IntersectionObserver' in window)){
-        wraps.forEach(wrap=>loadCard(wrap.querySelector('.product-img-box')));
+        wraps.forEach(loadCard);
         return;
     }
     const io=new IntersectionObserver(entries=>{
         entries.forEach(en=>{
             if(en.isIntersecting){
-                loadCard(en.target.querySelector('.product-img-box'));
+                loadCard(en.target);
                 io.unobserve(en.target);
             }
         });
@@ -253,15 +347,16 @@ function bindLazyLoad(){
     wraps.forEach(wrap=>io.observe(wrap));
 }
 
+/* 多图滑动指示点 */
 function bindGallery(){
     document.querySelectorAll('.gallery-wrap').forEach(wrap=>{
         const box=wrap.querySelector('.product-img-box');
         const dots=wrap.querySelector('.img-dots');
-        const imgs=box.querySelectorAll('img');
-        if(imgs.length<2){ dots.style.display='none'; return; }
+        const slots=box.querySelectorAll('.img-slot');
+        if(slots.length<2){ dots.style.display='none'; return; }
         dots.style.display='';
         dots.innerHTML='';
-        for(let i=0;i<imgs.length;i++){
+        for(let i=0;i<slots.length;i++){
             const d=document.createElement('span');
             d.className='img-dot'+(i===0?' active':'');
             dots.appendChild(d);
@@ -271,7 +366,7 @@ function bindGallery(){
             if(ticking) return;
             ticking=true;
             requestAnimationFrame(()=>{
-                const idx=Math.min(imgs.length-1,Math.round(box.scrollLeft/box.clientWidth));
+                const idx=Math.min(slots.length-1,Math.round(box.scrollLeft/box.clientWidth));
                 dots.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
                 ticking=false;
             });
@@ -300,135 +395,5 @@ function showToast(){
 
 loadProducts();
 </script>
-<!--===================== 手机端体验增强脚本开始 =====================-->
-<style>
-    /* 顶部加载进度条 */
-    #jbs-progress-bar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 0%;
-        height: 3px;
-        background: linear-gradient(90deg, #4facfe, #00f2fe);
-        z-index: 99999;
-        transition: width 0.3s ease, opacity 0.5s ease;
-        box-shadow: 0 0 8px rgba(79, 172, 254, 0.6);
-    }
-    #jbs-progress-bar.done { opacity: 0; }
-
-    /* 预览遮罩层 */
-    .img-preview-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.9);
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-    }
-    .img-preview-overlay img {
-        max-width: 95%; max-height: 95%;
-        object-fit: contain;
-    }
-</style>
-
-<!-- 进度条HTML结构 -->
-<div id="jbs-progress-bar"></div>
-<!-- 预览遮罩HTML结构 -->
-<div class="img-preview-overlay" id="jbs-preview-overlay">
-    <img src="" alt="preview" id="preview-img">
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const progressBar = document.getElementById('jbs-progress-bar');
-    const overlay = document.getElementById('jbs-preview-overlay');
-    const overlayImg = document.getElementById('preview-img');
-    const images = document.querySelectorAll('img');
-    
-    let totalImages = images.length;
-    let loadedCount = 0;
-
-    // 1. 更新顶部进度条
-    function updateProgress() {
-        loadedCount++;
-        const percent = Math.min((loadedCount / totalImages) * 100, 100);
-        progressBar.style.width = percent + '%';
-        if (loadedCount >= totalImages) {
-            setTimeout(() => progressBar.classList.add('done'), 800);
-        }
-    }
-
-    // 2. 处理每张图：淡入动画 + 加载提示 + 失败重试
-    images.forEach(img => {
-        // 排除宽高为0的隐藏图标
-        if (img.width === 0 && img.height === 0) return;
-
-        const loadingMsg = document.createElement('div');
-        loadingMsg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#999;font-size:13px;text-align:center;pointer-events:auto;cursor:pointer;background:rgba(255,255,255,0.8);padding:6px 12px;border-radius:4px;z-index:10;user-select:none;';
-        loadingMsg.textContent = '正在加载...';
-
-        img.style.opacity = '0';
-        img.style.transition = 'opacity 0.6s ease';
-
-        // 确保父级是相对定位，以便loadingMsg居中
-        let parent = img.parentNode;
-        if (window.getComputedStyle(parent).position === 'static') {
-            parent.style.position = 'relative';
-        }
-        parent.appendChild(loadingMsg);
-
-        function hideLoading() {
-            if (loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
-        }
-
-        // 成功加载
-        img.onload = function() {
-            hideLoading();
-            this.style.opacity = '1';
-            updateProgress();
-        };
-
-        // 加载失败
-        img.onerror = function() {
-            loadingMsg.textContent = '加载失败\n(点击重试)';
-            loadingMsg.style.color = '#ff6b6b';
-            loadingMsg.style.background = 'rgba(255,240,240,0.9)';
-            
-            // 点击重新加载
-            loadingMsg.onclick = function(e) {
-                e.stopPropagation(); // 防止触发图片放大
-                loadingMsg.textContent = '正在加载...';
-                loadingMsg.style.color = '#999';
-                loadingMsg.style.background = 'rgba(255,255,255,0.8)';
-                img.src = img.src; // 重新触发加载
-            };
-            updateProgress();
-        };
-    });
-
-    // 3. 图片点击放大
-    images.forEach(img => {
-        img.addEventListener('click', function(e) {
-            e.stopPropagation();
-            overlayImg.src = this.src;
-            overlay.style.display = 'flex';
-        });
-    });
-
-    // 4. 点击遮罩关闭
-    overlay.addEventListener('click', function() {
-        this.style.display = 'none';
-    });
-
-    // 如果页面没有图片，直接跑满进度条
-    if (totalImages === 0) {
-        progressBar.style.width = '100%';
-        setTimeout(() => progressBar.classList.add('done'), 500);
-    }
-});
-</script>
-<!--===================== 手机端体验增强脚本结束 =====================-->
- </body>
+</body>
 </html>
