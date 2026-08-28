@@ -22,18 +22,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .sub-tag.active{background:#fff;color:#333;border-color:#333;font-weight:600}
 .product-list{padding:16px;min-height:100px}
 .product-card{background:#fff;border-radius:12px;margin-bottom:20px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.03)}
-
-/* 多图滑动样式 */
 .gallery-wrap{position:relative}
 .product-img-box{width:100%;aspect-ratio:1/1;background:#eef0f2;overflow-x:auto;scroll-snap-type:x mandatory;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .product-img-box::-webkit-scrollbar{display:none}
 .product-img-box img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block;scroll-snap-align:center}
-
-/* 图片指示点 */
 .img-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:5px;pointer-events:none}
 .img-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.25);transition:all .2s}
 .img-dot.active{background:#fff;width:16px;border-radius:3px}
-
 .product-info{padding:16px}
 .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .product-no{font-size:12px;color:#999;letter-spacing:.5px}
@@ -100,12 +95,10 @@ let subCategories={};
 let currentCategory='all';
 let currentSubCategory='全部规格';
 
-/* 类目归一化：同义类目统一为一种叫法，避免重复显示（如"单圈老型"="老型单圈"） */
 const CATEGORY_ALIAS={
     '单圈圆珠':'圆珠单圈','单圈老型':'老型单圈','单圈无相':'无相单圈',
     '圆珠长串':'长串圆珠','老型长串':'长串老型','无相长串':'长串无相'
 };
-/* 字段名容错：手动编辑时误写成的中文键名也能正常读取 */
 const FIELD_ALIAS={
     no:['编号','否'],
     name:['名称','产品名'],
@@ -133,9 +126,7 @@ async function loadProducts(){
         const r=await fetch(DATA_URL+'?t='+Date.now());
         if(!r.ok) throw new Error();
         let txt=await r.text();
-        /* 容错修复：把中文弯引号（手动编辑常见错误）统一替换为英文直引号 */
         txt=txt.replace(/[\u201C\u201D]/g,'"').replace(/[\u2018\u2019]/g,"'");
-        /* 修复 details 值未加引号的常见手误（裸写的内容） */
         try{
             allProducts=JSON.parse(txt);
             if(!Array.isArray(allProducts)) allProducts=[];
@@ -150,14 +141,12 @@ async function loadProducts(){
     renderProducts();
 }
 
-/* 汇总某范围内的细分类目（去重、保持出现顺序） */
 function subsFor(list){
     const arr=['全部规格'];
     list.forEach(p=>{ if(p.grade&&arr.indexOf(p.grade)===-1) arr.push(p.grade); });
     return arr;
 }
 
-/* 大类目按数据中实际出现的类目去重生成；细分类目按各大类目下的实际数据生成 */
 function buildFilters(){
     mainCategories=[];
     allProducts.forEach(p=>{
@@ -223,14 +212,12 @@ function renderProducts(){
         return
     }
     c.innerHTML=f.map(p=>{
-        // 处理详情文字
         const dh=(p.details||'').split('\n').map(l=>{
             const i=l.indexOf('：');
             if(i>-1) return '<div class="detail-item"><span class="detail-label">'+l.substring(0,i+1)+'</span><span class="detail-value">'+l.substring(i+1)+'</span></div>';
             return l?'<div class="detail-item"><span class="detail-value">'+l+'</span></div>':''
         }).join('');
 
-        // 核心：处理多图滑动（首图直载，其余懒加载，减少同时下载量）
         const imgs = p.image.split(',').map((src,i)=>{
             const s=src.trim();
             if(i===0) return '<img src="'+s+'" alt="'+p.name+'" onerror="this.style.display=\'none\'">';
@@ -243,7 +230,6 @@ function renderProducts(){
     bindLazyLoad();
 }
 
-/* 懒加载：卡片滚近视口时才加载该卡片的其余图片，避免大量图片同时下载拖慢网速 */
 function bindLazyLoad(){
     const wraps=document.querySelectorAll('.gallery-wrap');
     const loadCard=box=>{
@@ -267,28 +253,27 @@ function bindLazyLoad(){
     wraps.forEach(wrap=>io.observe(wrap));
 }
 
-/* 多图滑动指示点：滚动时同步高亮 */
 function bindGallery(){
     document.querySelectorAll('.gallery-wrap').forEach(wrap=>{
         const box=wrap.querySelector('.product-img-box');
         const dots=wrap.querySelector('.img-dots');
         const imgs=box.querySelectorAll('img');
         if(imgs.length<2){ dots.style.display='none'; return; }
-        点.样式.显示='';
-        点.innerHTML='';
-        对于(让 i=0;i<图片.长度;i++){
+        dots.style.display='';
+        dots.innerHTML='';
+        for(let i=0;i<imgs.length;i++){
             const d=document.createElement('span');
             d.className='img-dot'+(i===0?' active':'');
-            点.appendChild(d);
+            dots.appendChild(d);
         }
         let ticking=false;
         box.addEventListener('scroll',()=>{
             if(ticking) return;
-             计时=真;
+            ticking=true;
             requestAnimationFrame(()=>{
                 const idx=Math.min(imgs.length-1,Math.round(box.scrollLeft/box.clientWidth));
-                点.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
-                  ticking=false;
+                dots.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+                ticking=false;
             });
         });
     });
@@ -296,18 +281,18 @@ function bindGallery(){
 
 function copyWechat(){
     const w="SHUN9285";
-    如果(navigator.clipboard&&窗口.是安全上下文){
-        导航器.剪贴板.写入文本(w).则(显示Toast)
+    if(navigator.clipboard&&window.isSecureContext){
+        navigator.clipboard.writeText(w).then(showToast)
     }else{
         const ta=document.createElement("textarea");
         ta.value=w;ta.style.position="fixed";ta.style.left="-9999px";
-        文档.主体.追加子节点(ta);ta.焦点();ta.选择();
-        尝试{文档.执行命令('复制');显示Toast()}捕获(e){警告("请手动添加微信号："+w)}
-        文档.主体.移除子节点(ta)
+        document.body.appendChild(ta);ta.focus();ta.select();
+        try{document.execCommand('copy');showToast()}catch(e){alert("请手动添加微信号："+w)}
+        document.body.removeChild(ta)
     }
 }
 
-函数 显示Toast(){
+function showToast(){
     const t=document.getElementById('toast');
     t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'),2000)
