@@ -299,6 +299,118 @@ function showToast(){
 }
 
 loadProducts();
+</script><!-- ================= 手机端体验增强脚本开始 ================= -->
+
+<!-- 1. 添加样式 (CSS) -->
+<style>
+    /* 图片淡入效果 */
+    .enhanced-img {
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        /* 手机端不需要鼠标样式，可以注释掉或保留 */
+        /* cursor: pointer; */
+    }
+    .enhanced-img.loaded {
+        opacity: 1;
+    }
+
+    /* 图片加载失败的占位样式 */
+    .img-error-placeholder {
+        width: 100%;
+        height: 200px;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-size: 14px;
+        border: 1px dashed #ccc;
+        /* 手机端点击区域要足够大 */
+        touch-action: manipulation;
+    }
+
+    /* 图片放大预览的遮罩层 */
+    .img-preview-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95); /* 背景更黑一点，突出图片 */
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        /* 防止在预览大图时，底层页面跟着滚动 */
+        touch-action: none;
+    }
+    .img-preview-overlay img {
+        max-width: 100%; /* 手机端图片宽度占满屏幕 */
+        max-height: 100%;
+        /* 允许用户双指缩放、滑动查看大图 */
+        touch-action: pan-x pan-y pinch-zoom;
+    }
+</style>
+
+<!-- 2. 添加功能逻辑 (JavaScript) -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 功能1 & 2: 图片淡入 + 加载失败处理 ---
+        const images = document.querySelectorAll('img');
+        images.forEach(img => {
+            img.classList.add('enhanced-img');
+
+            img.onload = function() {
+                this.classList.add('loaded');
+            };
+
+            img.onerror = function() {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'img-error-placeholder';
+                placeholder.innerHTML = '图片加载失败，点击重试';
+                placeholder.onclick = () => location.reload();
+                this.style.display = 'none';
+                this.parentNode.insertBefore(placeholder, this);
+            };
+        });
+
+        // --- 功能3: 图片点击放大预览 (适配手机端) ---
+        const overlay = document.createElement('div');
+        overlay.className = 'img-preview-overlay';
+        const overlayImg = document.createElement('img');
+        overlay.appendChild(overlayImg);
+        document.body.appendChild(overlay);
+
+        images.forEach(img => {
+            // 使用 touchend 事件替代 click，在手机端响应更快
+            img.addEventListener('touchend', function(e) {
+                if (this.style.display === 'none') return;
+                // 阻止事件冒泡，防止触发 overlay 的关闭事件
+                e.stopPropagation();
+                
+                overlayImg.src = this.src;
+                overlay.style.display = 'flex';
+            });
+            // 同时保留 click 事件，兼容部分设备
+            img.addEventListener('click', function(e) {
+                if (this.style.display === 'none') return;
+                e.stopPropagation();
+                overlayImg.src = this.src;
+                overlay.style.display = 'flex';
+            });
+        });
+
+        // 点击遮罩层空白处，关闭预览
+        overlay.addEventListener('click', function() {
+            overlay.style.display = 'none';
+        });
+        // 同样为遮罩层添加 touchend 事件
+        overlay.addEventListener('touchend', function() {
+            overlay.style.display = 'none';
+        });
+    });
 </script>
+
+<!-- ================= 手机端体验增强脚本结束 ================= -->
 </body>
 </html>
